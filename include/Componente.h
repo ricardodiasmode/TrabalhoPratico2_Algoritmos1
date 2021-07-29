@@ -2,15 +2,14 @@
 #define COMPONENTE_H
 #pragma once
 #include <Aeroporto.h>
+#include <vector>
 
 class Componente
 {
 public:
-	int NumeroDeAeroportos;
-	bool Aeroportos[100];
-	bool ContemAeroporto(int AeroportoID);
-	void AdicionarAeroporto(int AeroportoID);
-	bool ContemAlgumAeroporto = false;
+	std::vector<Aeroporto> Aeroportos;
+	bool ContemAeroporto(Aeroporto AeroportoRef);
+	void AdicionarAeroporto(Aeroporto AeroportoRef);
 };
 
 #endif // !COMPONENTE_H

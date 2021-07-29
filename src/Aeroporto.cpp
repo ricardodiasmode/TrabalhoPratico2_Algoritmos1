@@ -6,6 +6,6 @@ using namespace std;
 
 void Aeroporto::AdicionarAeroportoDeIda(int AeroportoID)
 {
-	AeroportosDeIda[NumeroDeRotasDeIda] = AeroportoID;
+	AeroportosDeIda.push_back(AeroportoID);
 	NumeroDeRotasDeIda++;
 }

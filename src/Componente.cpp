@@ -1,22 +1,21 @@
 #include <Componente.h>
 #include <string.h>
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
-bool Componente::ContemAeroporto(int AeroportoID)
+bool Componente::ContemAeroporto(Aeroporto AeroportoRef)
 {
-	if(AeroportoID > 100)
-		return false;
-	else
-	{
-		return Aeroportos[AeroportoID];
-	}
+	if (any_of(Aeroportos.begin(), Aeroportos.end(), [&](const Aeroporto& elem) { return elem.ID == AeroportoRef.ID; }))
+		return true;
+	return false;
 }
 
-void Componente::AdicionarAeroporto(int AeroportoID)
+void Componente::AdicionarAeroporto(Aeroporto AeroportoRef)
 {
-	if(!ContemAeroporto(AeroportoID))
-		NumeroDeAeroportos++;
-	Aeroportos[AeroportoID] = true;
+	if (!ContemAeroporto(AeroportoRef))
+	{
+		Aeroportos.push_back(AeroportoRef);
+	}
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <Aeroporto.h>
 #include <Componente.h>
+#include <vector>
 #include <string.h>
 
 using namespace std;
@@ -24,9 +25,10 @@ int main(int argc, char* argv[])
 	cin >> Linha;
 	int NumeroDeRotas = 0;
 	NumeroDeRotas = stoi(Linha);
-	// Lendo as rotas e criando o grafo
+
 	int NumeroDeComponentes = 0;
-	Componente Componentes[100];
+	vector<Componente> Componentes;
+	// Criando o grafo
 	for (int i = 0; i < NumeroDeRotas; i++)
 	{
 		// Lendo aeroportos
@@ -46,87 +48,54 @@ int main(int argc, char* argv[])
 
 		// Verificando componentes
 		int ComponenteEncontrado = -1;
-		for (int j = 0; j < NumeroDeComponentes; j++)
+		// Verifica se Aeroporto1 esta em algum componente
+		if (Aeroportos[Aeroporto1].ComponentePertencente != -1)
 		{
-			// Verifica se Aeroporto1 esta em algum componente
-			if (Componentes[j].ContemAeroporto(Aeroporto1))
-			{
-				for (int k = 0; k < NumeroDeComponentes; k++)
-				{
-					// Verifica se Aeroporto2 esta em algum componente
-					if (Componentes[k].ContemAeroporto(Aeroporto2))
-					{
-						// Pega todos os aeroportos do componente do A2 e junta no A1
-						for (int l = 0; l < NumeroDeAeroportos; l++)
-						{
-							if (Componentes[k].ContemAeroporto(l))
-							{
-								Aeroportos[l].ComponentePertencente = j;
-								Componentes[j].AdicionarAeroporto(l);
-							}
-						}
-						break;
-					}
-				}
-				ComponenteEncontrado = j;
-				break;
-			}
 			// Verifica se Aeroporto2 esta em algum componente
-			else if (Componentes[j].ContemAeroporto(Aeroporto2))
+			if (Aeroportos[Aeroporto2].ComponentePertencente != -1)
 			{
-				for (int k = 0; k < NumeroDeComponentes; k++)
+				if (Aeroportos[Aeroporto1].ComponentePertencente != Aeroportos[Aeroporto2].ComponentePertencente)
 				{
-					// Verifica se Aeroporto1 esta em algum componente
-					if (Componentes[k].ContemAeroporto(Aeroporto1))
+					// Pega todos os aeroportos do componente do A2 e junta no A1
+					for (int l = 0; l < NumeroDeAeroportos; l++)
 					{
-						// Pega todos os aeroportos do componente do A1 e junta no A2
-						for (int l = 0; l < NumeroDeAeroportos; l++)
+						if (Aeroportos[l].ComponentePertencente == Aeroportos[Aeroporto2].ComponentePertencente)
 						{
-							if (Componentes[k].ContemAeroporto(l))
-							{
-								Aeroportos[l].ComponentePertencente = j;
-								Componentes[j].AdicionarAeroporto(l);
-							}
+							Aeroportos[l].ComponentePertencente = Aeroportos[Aeroporto1].ComponentePertencente;
+							Componentes[Aeroportos[Aeroporto1].ComponentePertencente].AdicionarAeroporto(Aeroportos[l]);
 						}
-						break;
 					}
+					Componentes.erase(Componentes.begin() + Aeroportos[Aeroporto2].ComponentePertencente);
 				}
-				ComponenteEncontrado = j;
-				break;
 			}
+			ComponenteEncontrado = Aeroportos[Aeroporto1].ComponentePertencente;
 		}
+		// Verifica se Aeroporto2 esta em algum componente
+		else if (Aeroportos[Aeroporto2].ComponentePertencente != -1)
+			ComponenteEncontrado = Aeroportos[Aeroporto2].ComponentePertencente;
+
+		// Adiciona no componente encontrado, se foi encontrado
 		if (ComponenteEncontrado != -1)
 		{
 			// Colocando aeroportos no componente J
-			Componentes[ComponenteEncontrado].AdicionarAeroporto(Aeroportos[Aeroporto1].ID);
-			Componentes[ComponenteEncontrado].AdicionarAeroporto(Aeroportos[Aeroporto2].ID);
+			Componentes[ComponenteEncontrado].AdicionarAeroporto(Aeroportos[Aeroporto1]);
+			Componentes[ComponenteEncontrado].AdicionarAeroporto(Aeroportos[Aeroporto2]);
 			Aeroportos[Aeroporto1].ComponentePertencente = ComponenteEncontrado;
 			Aeroportos[Aeroporto2].ComponentePertencente = ComponenteEncontrado;
 		}
 		// Criando novo componente com esses aeroportos
 		else
 		{
-			Componentes[NumeroDeComponentes].NumeroDeAeroportos = 0;
+			Componente ComponenteAux;
 			// Adionando aeroportos ao novo componente
-			Componentes[NumeroDeComponentes].AdicionarAeroporto(Aeroportos[Aeroporto1].ID);
+			ComponenteAux.AdicionarAeroporto(Aeroportos[Aeroporto1]);
 			Aeroportos[Aeroporto1].ComponentePertencente = NumeroDeComponentes;
-			Componentes[NumeroDeComponentes].AdicionarAeroporto(Aeroportos[Aeroporto2].ID);
+			ComponenteAux.AdicionarAeroporto(Aeroportos[Aeroporto2]);
 			Aeroportos[Aeroporto2].ComponentePertencente = NumeroDeComponentes;
 			// Aumentando o tamanho do array de componentes
+			Componentes.push_back(ComponenteAux);
 			NumeroDeComponentes++;
-		}
-	}
-
-	// Checar qual componente tem aeroporto
-	for (int i = 0; i < NumeroDeComponentes; i++)
-	{
-		for (int j = 0; j < 100; j++)
-		{
-			if (Componentes[i].Aeroportos[j])
-			{
-				Componentes[i].ContemAlgumAeroporto = true;
-				break;
-			}
+			cout << "Numero componentes: " << NumeroDeComponentes << endl;
 		}
 	}
 
@@ -168,12 +137,6 @@ int main(int argc, char* argv[])
 	for (int i = 0; i < NumeroDeComponentes; i++)
 	{
 		bool AdicionouAresta = false;
-		if (!(Componentes[i].ContemAlgumAeroporto))
-		{
-			if (i != NumeroDeComponentes - 1)
-				NumeroDeArestasAdicionadas++;
-			continue;
-		}
 		// Checa se ainda nao alcancamos o ultimo componente
 		if (i != NumeroDeComponentes - 1)
 		{
@@ -221,7 +184,7 @@ int main(int argc, char* argv[])
 			NumeroDeArestasAdicionadas++;
 		}
 	}
-	cout << NumeroDeArestasAdicionadas << endl;
+	cout << "Numero de arestas adicionadas: " << NumeroDeArestasAdicionadas << endl;
 
 	return 0;
 }

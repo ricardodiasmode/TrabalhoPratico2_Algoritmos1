@@ -1,13 +1,14 @@
 #ifndef AEROPORTO_H
 #define AEROPORTO_H
 #pragma once
+#include <vector>
 
 class Aeroporto
 {
 public:
 	int ID;
 	int NumeroDeRotasDeIda;
-	int AeroportosDeIda[25];
+	std::vector<int> AeroportosDeIda;
 	int ComponentePertencente;
 	void AdicionarAeroportoDeIda(int AeroportoID);
 };
