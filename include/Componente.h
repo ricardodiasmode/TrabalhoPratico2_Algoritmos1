@@ -7,9 +7,8 @@
 class Componente
 {
 public:
-	std::vector<Aeroporto> Aeroportos;
-	bool ContemAeroporto(Aeroporto AeroportoRef);
-	void AdicionarAeroporto(Aeroporto AeroportoRef);
+	std::vector<Aeroporto*> Aeroportos;
+	void AdicionarAeroporto(Aeroporto* AeroportoRef);
 };
 
 #endif // !COMPONENTE_H
