@@ -127,92 +127,64 @@ int main(int argc, char* argv[])
 		cout << endl << endl;
 	}
 
-	// Para cada componente, pega o node com menor numero de idas
 	for (std::size_t i = 0; i < Componentes.size(); i++)
 	{
-		bool ContinuarNoLoop = true;
-		bool ChegouNoFinal = false;
-		while (ContinuarNoLoop)
+		bool SairDoLoop = false;
+		while (!SairDoLoop)
 		{
-			bool EncontrouAeroporto = false;
-			for (int j = 0; j < NumeroDeAeroportos; j++)
+			// Procura o aeroporto com maior numero de rotas de ida, mas com 0 chegadas
+			int MaiorRotasDeIda = -1;
+			std::size_t AeroportoDeChegada;
+			bool PrecisaDeChegada = false;
+			for (std::size_t j = 0; j < Componentes[i].Aeroportos.size(); j++)
 			{
-				if (Aeroportos[j].ComponentePertencente == (int)i)
+				if (Componentes[i].Aeroportos[j]->NumeroDeRotasDeChegada == 0)
 				{
-					EncontrouAeroporto = true;
-					ContinuarNoLoop = false;
-					break;
+					if (Componentes[i].Aeroportos[j]->NumeroDeRotasDeIda > MaiorRotasDeIda)
+						AeroportoDeChegada = j;
+					// Verifica se ha pelo menos mais um aeroporto com rotas de chegada == 0.
+					else
+						PrecisaDeChegada = true;
 				}
 			}
-			if (!EncontrouAeroporto)
+			std::size_t AeroportoDeIda;
+			bool AchouIda = false;
+			bool PrecisaDeIda = false;
+			// Procura qualquer aeroporto com 0 rotas de ida
+			for (std::size_t j = 0; j < Componentes[i].Aeroportos.size(); j++)
 			{
-				i = i + 1;
-				if (i > Componentes.size() - 1)
+				if (Componentes[i].Aeroportos[j]->NumeroDeRotasDeIda == 0)
 				{
-					ChegouNoFinal = true;
+					if (!AchouIda)
+						AeroportoDeIda = j;
+					// Verifica se ha pelo menos mais um aeroporto com rotas de ida == 0.
+					else
+						PrecisaDeIda = true;
 				}
 			}
-		}
-		if (ChegouNoFinal)
-			break;
-		Aeroporto* AeroportoComMaiorNumeroDeChegadas;
-		int MaiorNumeroDeRotasDeChegadas = -1;
-		for (Aeroporto* AeroportoAtual : Componentes[i].Aeroportos)
-		{
-			if (AeroportoAtual->NumeroDeRotasDeChegada > MaiorNumeroDeRotasDeChegadas)
+			if (PrecisaDeIda && PrecisaDeChegada)
 			{
-				MaiorNumeroDeRotasDeChegadas = AeroportoAtual->NumeroDeRotasDeChegada;
-				AeroportoComMaiorNumeroDeChegadas = AeroportoAtual;
+				Componentes[i].Aeroportos[AeroportoDeIda]->AdicionarAeroportoDeIda(Componentes[i].Aeroportos[AeroportoDeChegada]->ID);
+				Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada = Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada + 1;
+				NumeroDeArestasAdicionadas++;
 			}
-		}
-		// Verificando se proximo componente tem aeroporto
-		std::size_t ProximoComponente = i + 1;
-		ContinuarNoLoop = true;
-		while (ContinuarNoLoop)
-		{
-			bool EncontrouAeroporto = false;
-			for (int j = 0; j < NumeroDeAeroportos; j++)
+			else if (PrecisaDeIda && !PrecisaDeChegada)
 			{
-				if (Aeroportos[j].ComponentePertencente == (int)ProximoComponente &&
-					ProximoComponente != i)
-				{
-					EncontrouAeroporto = true;
-					ContinuarNoLoop = false;
-					break;
-				}
+				Componentes[i].Aeroportos[AeroportoDeIda]->AdicionarAeroportoDeIda(Componentes[i].Aeroportos[0]->ID);
+				Componentes[i].Aeroportos[0]->NumeroDeRotasDeChegada = Componentes[i].Aeroportos[0]->NumeroDeRotasDeChegada + 1;
+				NumeroDeArestasAdicionadas++;
 			}
-			if (!EncontrouAeroporto)
+			else if (!PrecisaDeIda && PrecisaDeChegada)
 			{
-				ProximoComponente = ProximoComponente + 1;
-				if (ProximoComponente > Componentes.size() - 1)
-					ProximoComponente = 0;
+				Componentes[i].Aeroportos[0]->AdicionarAeroportoDeIda(Componentes[i].Aeroportos[AeroportoDeChegada]->ID);
+				Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada = Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada + 1;
+				NumeroDeArestasAdicionadas++;
 			}
+			else
+				SairDoLoop = true;
 		}
-		if (ProximoComponente > Componentes.size() - 1)
-			ProximoComponente = 0;
-		// Agora adiciona uma rota desse aeroporto para o aeroporto
-		// com maior numero de rotas do componente seguinte
-		Aeroporto* AeroportoComMaiorNumeroDeIdas;
-		int MaiorNumeroDeRotasDeIda = -1;
-		for (Aeroporto* AeroportoAtual : Componentes[ProximoComponente].Aeroportos)
-		{
-			if (AeroportoAtual->NumeroDeRotasDeIda > MaiorNumeroDeRotasDeIda)
-			{
-				MaiorNumeroDeRotasDeIda = AeroportoAtual->NumeroDeRotasDeIda;
-				AeroportoComMaiorNumeroDeIdas = AeroportoAtual;
-			}
-		}
-		cout << "Adicionando aresta do " << AeroportoComMaiorNumeroDeChegadas->ID + 1 << " para o " << AeroportoComMaiorNumeroDeIdas->ID + 1 << endl;
-		AeroportoComMaiorNumeroDeChegadas->AdicionarAeroportoDeIda(AeroportoComMaiorNumeroDeIdas->ID);
-		AeroportoComMaiorNumeroDeIdas->NumeroDeRotasDeChegada = AeroportoComMaiorNumeroDeIdas->NumeroDeRotasDeChegada+1;
-		NumeroDeArestasAdicionadas++;
 	}
-	// Agora para cada node ainda sem rotas de ida, adiciona uma
-	for (Aeroporto AeroportoAtual : Aeroportos)
-	{
-		if (AeroportoAtual.NumeroDeRotasDeChegada == 0)
-			NumeroDeArestasAdicionadas++;
-	}
+	// A partir daqui temos todas as arestas internas. Agora precisamos adicionar uma aresta ligando cada componente.
 
 
 	cout << "Numero de arestas adicionadas: " << NumeroDeArestasAdicionadas << endl;
