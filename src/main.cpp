@@ -130,19 +130,44 @@ int main(int argc, char* argv[])
 	// Para cada componente, pega o node com menor numero de idas
 	for (std::size_t i = 0; i < Componentes.size(); i++)
 	{
-		Aeroporto* AeroportoComMenorNumeroDeIdas;
-		int MenorNumeroDeRotasDeIda = 99999;
+		bool ContinuarNoLoop = true;
+		bool ChegouNoFinal = false;
+		while (ContinuarNoLoop)
+		{
+			bool EncontrouAeroporto = false;
+			for (int j = 0; j < NumeroDeAeroportos; j++)
+			{
+				if (Aeroportos[j].ComponentePertencente == (int)i)
+				{
+					EncontrouAeroporto = true;
+					ContinuarNoLoop = false;
+					break;
+				}
+			}
+			if (!EncontrouAeroporto)
+			{
+				i = i + 1;
+				if (i > Componentes.size() - 1)
+				{
+					ChegouNoFinal = true;
+				}
+			}
+		}
+		if (ChegouNoFinal)
+			break;
+		Aeroporto* AeroportoComMaiorNumeroDeChegadas;
+		int MaiorNumeroDeRotasDeChegadas = -1;
 		for (Aeroporto* AeroportoAtual : Componentes[i].Aeroportos)
 		{
-			if (AeroportoAtual->NumeroDeRotasDeIda < MenorNumeroDeRotasDeIda)
+			if (AeroportoAtual->NumeroDeRotasDeChegada > MaiorNumeroDeRotasDeChegadas)
 			{
-				MenorNumeroDeRotasDeIda = AeroportoAtual->NumeroDeRotasDeIda;
-				AeroportoComMenorNumeroDeIdas = AeroportoAtual;
+				MaiorNumeroDeRotasDeChegadas = AeroportoAtual->NumeroDeRotasDeChegada;
+				AeroportoComMaiorNumeroDeChegadas = AeroportoAtual;
 			}
 		}
 		// Verificando se proximo componente tem aeroporto
 		std::size_t ProximoComponente = i + 1;
-		bool ContinuarNoLoop = true;
+		ContinuarNoLoop = true;
 		while (ContinuarNoLoop)
 		{
 			bool EncontrouAeroporto = false;
@@ -177,8 +202,8 @@ int main(int argc, char* argv[])
 				AeroportoComMaiorNumeroDeIdas = AeroportoAtual;
 			}
 		}
-		cout << "Adicionando aresta do " << AeroportoComMenorNumeroDeIdas->ID + 1 << " para o " << AeroportoComMaiorNumeroDeIdas->ID + 1 << endl;
-		AeroportoComMenorNumeroDeIdas->AdicionarAeroportoDeIda(AeroportoComMaiorNumeroDeIdas->ID);
+		cout << "Adicionando aresta do " << AeroportoComMaiorNumeroDeChegadas->ID + 1 << " para o " << AeroportoComMaiorNumeroDeIdas->ID + 1 << endl;
+		AeroportoComMaiorNumeroDeChegadas->AdicionarAeroportoDeIda(AeroportoComMaiorNumeroDeIdas->ID);
 		AeroportoComMaiorNumeroDeIdas->NumeroDeRotasDeChegada = AeroportoComMaiorNumeroDeIdas->NumeroDeRotasDeChegada+1;
 		NumeroDeArestasAdicionadas++;
 	}
