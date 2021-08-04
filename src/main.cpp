@@ -1,193 +1,232 @@
 #include <iostream>
-#include <Aeroporto.h>
-#include <Componente.h>
+#include <list>
+#include <stack>
 #include <vector>
-#include <string.h>
 
 using namespace std;
 
-int main(int argc, char* argv[])
+vector<vector<int>> SCCs;
+
+class Graph {
+    int V;
+    list<int>* adj;
+    bool** AdjMatrix;
+    void fillOrder(int s, bool visitedV[], stack<int>& Stack);
+    void DFS(int s, bool visitedV[]);
+    vector<vector<int>> SCCAdj; // not being used
+    int* InDegree;
+    int* OutDegree;
+    void AddSCC(int newNode);
+    void AddSCCNode(int newNode);
+    void AddSCCEdge(int scc1, int scc2);
+
+public:
+    void SetSCCEdges();
+    int MaxDegree();
+    Graph(int V);
+    void addEdge(int s, int d);
+    void GetSCC();
+    int GetSCCFromNode(int node);
+    Graph transpose();
+};
+
+int Graph::MaxDegree()
 {
-	// Lendo o numero de aeroportos
-	string Linha;
-	cin >> Linha;
-	int NumeroDeAeroportos = 0;
-	NumeroDeAeroportos = stoi(Linha);
-	Aeroporto Aeroportos[NumeroDeAeroportos];
-	for (int i = 0; i < NumeroDeAeroportos; i++)
-	{
-		Aeroportos[i].NumeroDeRotasDeIda = 0;
-		Aeroportos[i].NumeroDeRotasDeChegada = 0;
-		Aeroportos[i].ID = -1;
-		Aeroportos[i].ComponentePertencente = -1;
-	}
+    int NumberOfOutDegree = 0;
+    int NumberOfInDegree = 0;
+    for (size_t i = 0; i < SCCs.size(); i++)
+    {
+        if (OutDegree[i] == 0)
+            NumberOfOutDegree++;
+        if (InDegree[i] == 0)
+            NumberOfInDegree++;
+    }
+    return NumberOfOutDegree > NumberOfInDegree ? NumberOfOutDegree : NumberOfInDegree;
+}
 
-	// Lendo o numero de rotas
-	cin >> Linha;
-	int NumeroDeRotas = 0;
-	NumeroDeRotas = stoi(Linha);
+void Graph::AddSCCEdge(int scc1, int scc2)
+{
+    if (scc1 == scc2)
+        return;
+    OutDegree[scc1] = OutDegree[scc1] + 1;
+    InDegree[scc2] = InDegree[scc2] + 1;
+    SCCAdj[scc1].push_back(scc2);
+}
 
-	int NumeroDeComponentes = 0;
-	vector<Componente> Componentes;
-	// Criando o grafo
-	for (int i = 0; i < NumeroDeRotas; i++)
-	{
-		// Lendo aeroportos
-		int Aeroporto1;
-		int Aeroporto2;
-		cin >> Aeroporto1;
-		cin >> Aeroporto2;
+int Graph::GetSCCFromNode(int node)
+{
+    for (size_t i = 0; i < SCCs.size(); i++)
+    {
+        for (size_t j = 0; j < SCCs[i].size(); j++)
+        {
+            if (node == SCCs[i][j])
+                return (int)i;
+        }
+    }
+}
 
-		// Diminuindo para ficar entre 0 e NumDeAeroportos
-		Aeroporto1--;
-		Aeroporto2--;
+void Graph::SetSCCEdges()
+{
+    InDegree = new int[SCCs.size()];
+    OutDegree = new int[SCCs.size()];
+    for (size_t i = 0; i < SCCs.size(); i++)
+    {
+        InDegree[i] = 0;
+        OutDegree[i] = 0;
+    }
 
-		// Definindo rota de um aeroporto para outro
-		Aeroportos[Aeroporto1].AdicionarAeroportoDeIda(Aeroporto2);
-		Aeroportos[Aeroporto2].NumeroDeRotasDeChegada = Aeroportos[Aeroporto2].NumeroDeRotasDeChegada+1;
-		Aeroportos[Aeroporto1].ID = Aeroporto1;
-		Aeroportos[Aeroporto2].ID = Aeroporto2;
-		// Verificando componentes
-		int ComponenteEncontrado = -1;
-		// Verifica se Aeroporto1 esta em algum componente
-		if (Aeroportos[Aeroporto1].ComponentePertencente != -1)
-		{
-			// Verifica se Aeroporto2 esta em algum componente
-			if (Aeroportos[Aeroporto2].ComponentePertencente != -1)
-			{
-				if (Aeroportos[Aeroporto1].ComponentePertencente != Aeroportos[Aeroporto2].ComponentePertencente)
-				{
-					// Pega todos os aeroportos do componente do A2 e junta no A1
-					for (int l = 0; l < NumeroDeAeroportos; l++)
-					{
-						if (Aeroportos[l].ComponentePertencente == Aeroportos[Aeroporto2].ComponentePertencente &&
-							Aeroportos[l].ID != Aeroportos[Aeroporto2].ID)
-						{
-							Aeroportos[l].ComponentePertencente = Aeroportos[Aeroporto1].ComponentePertencente;
-							Componentes[Aeroportos[Aeroporto1].ComponentePertencente].AdicionarAeroporto(&(Aeroportos[l]));
-						}
-					}
-					Aeroportos[Aeroporto2].ComponentePertencente = Aeroportos[Aeroporto1].ComponentePertencente;
-					Componentes[Aeroportos[Aeroporto1].ComponentePertencente].AdicionarAeroporto(&(Aeroportos[Aeroporto2]));
-				}
-			}
-			ComponenteEncontrado = Aeroportos[Aeroporto1].ComponentePertencente;
-		}
-		// Verifica se Aeroporto2 esta em algum componente
-		else if (Aeroportos[Aeroporto2].ComponentePertencente != -1)
-			ComponenteEncontrado = Aeroportos[Aeroporto2].ComponentePertencente;
+    for (size_t i=0;i< SCCs.size();i++)
+    {
+        for (size_t j = 0; j < SCCs[i].size(); j++)
+        {
+            for (int k = 0; k < V; k++)
+            {
+                if (AdjMatrix[SCCs[i][j]][k])
+                    AddSCCEdge(i, GetSCCFromNode(k));
+            }
+        }
+    }
+}
 
-		// Adiciona no componente encontrado, se foi encontrado
-		if (ComponenteEncontrado != -1)
-		{
-			// Colocando aeroportos no componente J
-			Componentes[ComponenteEncontrado].AdicionarAeroporto(&(Aeroportos[Aeroporto1]));
-			Componentes[ComponenteEncontrado].AdicionarAeroporto(&(Aeroportos[Aeroporto2]));
-			Aeroportos[Aeroporto1].ComponentePertencente = ComponenteEncontrado;
-			Aeroportos[Aeroporto2].ComponentePertencente = ComponenteEncontrado;
-		}
-		// Criando novo componente com esses aeroportos
-		else
-		{
-			Componente ComponenteAux;
-			// Adionando aeroportos ao novo componente
-			ComponenteAux.AdicionarAeroporto(&(Aeroportos[Aeroporto1]));
-			Aeroportos[Aeroporto1].ComponentePertencente = NumeroDeComponentes;
-			ComponenteAux.AdicionarAeroporto(&(Aeroportos[Aeroporto2]));
-			Aeroportos[Aeroporto2].ComponentePertencente = NumeroDeComponentes;
-			// Aumentando o tamanho do array de componentes
-			Componentes.push_back(ComponenteAux);
-			NumeroDeComponentes++;
-		}
+void Graph::AddSCC(int newNode)
+{
+    SCCs.push_back({ newNode });
+    SCCAdj.push_back({});
+}
 
-		/* debug
-		for (std::size_t i = 0; i < Componentes.size(); i++)
-		{
-			cout << "Componente " << i << endl;
-			for (int j = 0; j < NumeroDeAeroportos; j++)
-			{
-				if (Aeroportos[j].ComponentePertencente == (int)i)
-					cout << (Aeroportos[j].ID+1) << " ";
-			}
-			cout << endl << endl;
-		}*/
-	}
-	
-	int NumeroDeArestasAdicionadas = 0;
+void Graph::AddSCCNode(int newNode)
+{
+    if (!SCCs.empty())
+    {
+        if (SCCs[SCCs.size() - 1][0] == newNode)
+        {
+            return;
+        }
+        SCCs[SCCs.size() - 1].push_back(newNode);
+    }
+}
 
-	// debug
-	for (std::size_t i = 0; i < Componentes.size(); i++)
-	{
-		cout << "Componente " << i << endl;
-		for (int j = 0; j < NumeroDeAeroportos; j++)
-		{
-			if (Aeroportos[j].ComponentePertencente == (int)i)
-				cout << (Aeroportos[j].ID + 1) << " ";
-		}
-		cout << endl << endl;
-	}
+Graph::Graph(int V) {
+    this->V = V;
+    adj = new list<int>[V];
+    AdjMatrix = new bool*[V];
+    for (int i = 0; i < V; i++)
+        AdjMatrix[i] = new bool[V];
+    for (int i = 0; i < V; i++)
+        for (int j = 0; j < V; j++)
+            AdjMatrix[i][j] = false;
+}
 
-	for (std::size_t i = 0; i < Componentes.size(); i++)
-	{
-		bool SairDoLoop = false;
-		while (!SairDoLoop)
-		{
-			// Procura o aeroporto com maior numero de rotas de ida, mas com 0 chegadas
-			int MaiorRotasDeIda = -1;
-			std::size_t AeroportoDeChegada;
-			bool PrecisaDeChegada = false;
-			for (std::size_t j = 0; j < Componentes[i].Aeroportos.size(); j++)
-			{
-				if (Componentes[i].Aeroportos[j]->NumeroDeRotasDeChegada == 0)
-				{
-					if (Componentes[i].Aeroportos[j]->NumeroDeRotasDeIda > MaiorRotasDeIda)
-						AeroportoDeChegada = j;
-					// Verifica se ha pelo menos mais um aeroporto com rotas de chegada == 0.
-					else
-						PrecisaDeChegada = true;
-				}
-			}
-			std::size_t AeroportoDeIda;
-			bool AchouIda = false;
-			bool PrecisaDeIda = false;
-			// Procura qualquer aeroporto com 0 rotas de ida
-			for (std::size_t j = 0; j < Componentes[i].Aeroportos.size(); j++)
-			{
-				if (Componentes[i].Aeroportos[j]->NumeroDeRotasDeIda == 0)
-				{
-					if (!AchouIda)
-						AeroportoDeIda = j;
-					// Verifica se ha pelo menos mais um aeroporto com rotas de ida == 0.
-					else
-						PrecisaDeIda = true;
-				}
-			}
-			if (PrecisaDeIda && PrecisaDeChegada)
-			{
-				Componentes[i].Aeroportos[AeroportoDeIda]->AdicionarAeroportoDeIda(Componentes[i].Aeroportos[AeroportoDeChegada]->ID);
-				Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada = Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada + 1;
-				NumeroDeArestasAdicionadas++;
-			}
-			else if (PrecisaDeIda && !PrecisaDeChegada)
-			{
-				Componentes[i].Aeroportos[AeroportoDeIda]->AdicionarAeroportoDeIda(Componentes[i].Aeroportos[0]->ID);
-				Componentes[i].Aeroportos[0]->NumeroDeRotasDeChegada = Componentes[i].Aeroportos[0]->NumeroDeRotasDeChegada + 1;
-				NumeroDeArestasAdicionadas++;
-			}
-			else if (!PrecisaDeIda && PrecisaDeChegada)
-			{
-				Componentes[i].Aeroportos[0]->AdicionarAeroportoDeIda(Componentes[i].Aeroportos[AeroportoDeChegada]->ID);
-				Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada = Componentes[i].Aeroportos[AeroportoDeChegada]->NumeroDeRotasDeChegada + 1;
-				NumeroDeArestasAdicionadas++;
-			}
-			else
-				SairDoLoop = true;
-		}
-	}
-	// A partir daqui temos todas as arestas internas. Agora precisamos adicionar uma aresta ligando cada componente.
+// DFS
+void Graph::DFS(int s, bool visitedV[]) {
+    visitedV[s] = true;
+    //cout << s+1 << " ";
+    AddSCCNode(s);
 
+    list<int>::iterator i;
+    for (i = adj[s].begin(); i != adj[s].end(); ++i)
+        if (!visitedV[*i])
+            DFS(*i, visitedV);
+}
 
-	cout << "Numero de arestas adicionadas: " << NumeroDeArestasAdicionadas << endl;
+// Transpose
+Graph Graph::transpose() {
+    Graph g(V);
+    for (int s = 0; s < V; s++) {
+        list<int>::iterator i;
+        for (i = adj[s].begin(); i != adj[s].end(); ++i) {
+            g.adj[*i].push_back(s);
+        }
+    }
+    return g;
+}
 
-	return 0;
+// Add edge into the graph
+void Graph::addEdge(int s, int d) {
+    adj[s].push_back(d);
+    AdjMatrix[s][d] = true;
+}
+
+void Graph::fillOrder(int s, bool visitedV[], stack<int>& Stack) {
+    visitedV[s] = true;
+
+    list<int>::iterator i;
+    for (i = adj[s].begin(); i != adj[s].end(); ++i)
+        if (!visitedV[*i])
+            fillOrder(*i, visitedV, Stack);
+
+    Stack.push(s);
+}
+
+// Print strongly connected component
+void Graph::GetSCC() {
+    stack<int> Stack;
+
+    bool* visitedV = new bool[V];
+    for (int i = 0; i < V; i++)
+        visitedV[i] = false;
+
+    for (int i = 0; i < V; i++)
+        if (visitedV[i] == false)
+            fillOrder(i, visitedV, Stack);
+
+    Graph gr = transpose();
+
+    for (int i = 0; i < V; i++)
+        visitedV[i] = false;
+
+    //cout << "Strongly Connected Components:\n";
+    while (Stack.empty() == false) 
+    {
+        int s = Stack.top();
+        Stack.pop();
+        if (visitedV[s] == false) 
+        {
+            AddSCC(s);
+            //cout << "SCCs size after adding: " << SCCs.size() << endl;
+            gr.DFS(s, visitedV);
+            //cout << endl;
+        }
+    }
+}
+
+int main()
+{
+    // Lendo o numero de aeroportos
+    string Linha;
+    cin >> Linha;
+    int NumeroDeAeroportos = 0;
+    NumeroDeAeroportos = stoi(Linha);
+
+    // Lendo o numero de rotas
+    cin >> Linha;
+    int NumeroDeRotas = 0;
+    NumeroDeRotas = stoi(Linha);
+
+    Graph Grafo(NumeroDeAeroportos);
+
+    //cout << "Lendo " << NumeroDeAeroportos << " aeroportos e " << NumeroDeRotas << " rotas." << endl << endl;
+    for (int i = 0; i < NumeroDeRotas; i++)
+    {
+        // Lendo aeroportos
+        int Aeroporto1;
+        int Aeroporto2;
+        cin >> Aeroporto1;
+        Aeroporto1--;
+        cin >> Aeroporto2;
+        Aeroporto2--;
+        Grafo.addEdge(Aeroporto1, Aeroporto2);
+    }
+
+    Grafo.GetSCC();
+    Grafo.SetSCCEdges();
+
+    int NumeroDeArestas = Grafo.MaxDegree();
+    //cout << endl << endl;
+    cout << NumeroDeArestas << endl;
+
+    // dont forget to dealocate size
+    // 
+    // https://stackoverflow.com/questions/14305236/minimal-addition-to-strongly-connected-graph
+    return 0;
 }
