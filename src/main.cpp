@@ -8,32 +8,72 @@ using namespace std;
 vector<vector<int>> SCCs;
 
 class Graph {
-    int V;
-    list<int>* adj;
-    bool** AdjMatrix;
-    void fillOrder(int s, bool visitedV[], stack<int>& Stack);
-    void DFS(int s, bool visitedV[]);
-    vector<vector<int>> SCCAdj; // not being used
+    // Variaveis
+private:
+    int NumeroDeVertices;
+    
+    // Lista que representa as arestas de um aeroporto no outro
+    list<int>* ListaDeAdjacencia;
+
+    // Matriz que representa as arestas de um aeroporto no outro 
+    bool** MatrizDeAdjacencia;
+
+    // Note que a lista e a matriz são utilizadas de forma diferente. 
+    // Fiz a escolha de implementar as duas por conveniencia.
+
+    /* Variaveis que nos dara a resposta do minimo de arestas para formar apenas um SCC */
+    // Grau de entrada de cada SCC
     int* InDegree;
+    // Grau de saida de cada SCC
     int* OutDegree;
-    void AddSCC(int newNode);
-    void AddSCCNode(int newNode);
-    void AddSCCEdge(int scc1, int scc2);
+
+    // Funcoes
+private:
+    /* Funcoes utilizadas no algoritmo de Kosaraju's ensinado em aula */
+    void PreencherStack(int s, bool VerticesVisitados[], stack<int>& Stack);
+    void DFS(int s, bool VerticesVisitados[]);
+
+    /* Funcoes utilizadas para encontrar as arestas necessarias para formar apenas um SCC */
+
+    // Adiciona um SCC na medida em que ele eh descoberto
+    void AdicionarSCC(int newNode);
+    // Mesmo sendo um SCC, ainda tem nodes(aeroportos) dentro dele
+    void AdicionarNodeNaSCC(int newNode);
+    // Adiciona arestas nos SCCs de acordo com as arestas dos aeroportos
+    void AdicionarArestaNaSCC(int scc1, int scc2);
 
 public:
-    void SetSCCEdges();
+    // Construtor
+    Graph(int NumeroDeVertices);
+
+    // Destrutor
+    ~Graph();
+
+    void DefinirArestasDaSCC();
+
+    // Retorna a quantidade de arestas necessarias para tornar todos os SCCs no grafo um unico SCC
     int MaxDegree();
-    Graph(int V);
-    void addEdge(int s, int d);
-    void GetSCC();
-    int GetSCCFromNode(int node);
-    Graph transpose();
+
+    // Adiciona uma aresta do node1 para o node2
+    void AdicionarAresta(int node1, int node2);
+
+    // Encontra o numero de SCCs ao rodar o algoritmo de Kosaraju's
+    void DefinirNumeroDeSCCs();
+
+    // Retorna o index da SCC que contem o node passado por parametro
+    int PegarSCCAtravesDeNode(int node);
+
+    // Retorna o grafo transposto
+    Graph GrafoTransposto();
 };
 
 int Graph::MaxDegree()
 {
+    // Variaveis auxiliares
     int NumberOfOutDegree = 0;
     int NumberOfInDegree = 0;
+
+    // Loop para pegar a quantidade de cada grau
     for (size_t i = 0; i < SCCs.size(); i++)
     {
         if (OutDegree[i] == 0)
@@ -41,22 +81,28 @@ int Graph::MaxDegree()
         if (InDegree[i] == 0)
             NumberOfInDegree++;
     }
+
+    // Resposta do problema
     return NumberOfOutDegree > NumberOfInDegree ? NumberOfOutDegree : NumberOfInDegree;
 }
 
-void Graph::AddSCCEdge(int scc1, int scc2)
+void Graph::AdicionarArestaNaSCC(int scc1, int scc2)
 {
+    // Verifica se quer adicionar uma aresta para o proprio node
     if (scc1 == scc2)
         return;
+
+    // Adicionando apenas o grau, pois eh a unica coisa que precisamos
     OutDegree[scc1] = OutDegree[scc1] + 1;
     InDegree[scc2] = InDegree[scc2] + 1;
-    SCCAdj[scc1].push_back(scc2);
 }
 
-int Graph::GetSCCFromNode(int node)
+int Graph::PegarSCCAtravesDeNode(int node)
 {
+    // Percorre todos os SCCs
     for (size_t i = 0; i < SCCs.size(); i++)
     {
+        // Percorre todos os nodes dos SCCs
         for (size_t j = 0; j < SCCs[i].size(); j++)
         {
             if (node == SCCs[i][j])
@@ -65,8 +111,9 @@ int Graph::GetSCCFromNode(int node)
     }
 }
 
-void Graph::SetSCCEdges()
+void Graph::DefinirArestasDaSCC()
 {
+    // Inicializando as variaveis de grau
     InDegree = new int[SCCs.size()];
     OutDegree = new int[SCCs.size()];
     for (size_t i = 0; i < SCCs.size(); i++)
@@ -75,117 +122,131 @@ void Graph::SetSCCEdges()
         OutDegree[i] = 0;
     }
 
+    // Adicionando arestas nos SCCs de acordo com as rotas dos aeroportos
     for (size_t i=0;i< SCCs.size();i++)
     {
         for (size_t j = 0; j < SCCs[i].size(); j++)
         {
-            for (int k = 0; k < V; k++)
+            for (int k = 0; k < NumeroDeVertices; k++)
             {
-                if (AdjMatrix[SCCs[i][j]][k])
-                    AddSCCEdge(i, GetSCCFromNode(k));
+                // Vendo se o node j do SCC de index i tem rota para o node k
+                if (MatrizDeAdjacencia[SCCs[i][j]][k])
+                    AdicionarArestaNaSCC(i, PegarSCCAtravesDeNode(k));
             }
         }
     }
 }
 
-void Graph::AddSCC(int newNode)
+void Graph::AdicionarSCC(int newNode)
 {
     SCCs.push_back({ newNode });
-    SCCAdj.push_back({});
 }
 
-void Graph::AddSCCNode(int newNode)
+void Graph::AdicionarNodeNaSCC(int newNode)
 {
+    // Verifica se existe pelo menos um SCC
     if (!SCCs.empty())
     {
+        // Verifica se o node ja foi adicionado
         if (SCCs[SCCs.size() - 1][0] == newNode)
         {
             return;
         }
+        // De fato adiciona o node
         SCCs[SCCs.size() - 1].push_back(newNode);
     }
 }
 
-Graph::Graph(int V) {
-    this->V = V;
-    adj = new list<int>[V];
-    AdjMatrix = new bool*[V];
-    for (int i = 0; i < V; i++)
-        AdjMatrix[i] = new bool[V];
-    for (int i = 0; i < V; i++)
-        for (int j = 0; j < V; j++)
-            AdjMatrix[i][j] = false;
+Graph::Graph(int NumeroDeVertices) {
+    this->NumeroDeVertices = NumeroDeVertices;
+
+    ListaDeAdjacencia = new list<int>[NumeroDeVertices];
+
+    MatrizDeAdjacencia = new bool*[NumeroDeVertices];
+    for (int i = 0; i < NumeroDeVertices; i++)
+        MatrizDeAdjacencia[i] = new bool[NumeroDeVertices];
+    for (int i = 0; i < NumeroDeVertices; i++)
+        for (int j = 0; j < NumeroDeVertices; j++)
+            MatrizDeAdjacencia[i][j] = false;
 }
 
-// DFS
-void Graph::DFS(int s, bool visitedV[]) {
-    visitedV[s] = true;
-    //cout << s+1 << " ";
-    AddSCCNode(s);
+Graph::~Graph()
+{
+    delete[] ListaDeAdjacencia;
+
+    for (int i = 0; i < NumeroDeVertices; i++)
+        delete[] MatrizDeAdjacencia[i];
+    delete[] MatrizDeAdjacencia;
+
+    delete[] InDegree;
+    delete[] OutDegree;
+}
+
+void Graph::DFS(int s, bool VerticesVisitados[]) {
+    VerticesVisitados[s] = true;
+
+    // Adicionando node no ultimo SCC criado
+    AdicionarNodeNaSCC(s);
 
     list<int>::iterator i;
-    for (i = adj[s].begin(); i != adj[s].end(); ++i)
-        if (!visitedV[*i])
-            DFS(*i, visitedV);
+    for (i = ListaDeAdjacencia[s].begin(); i != ListaDeAdjacencia[s].end(); ++i)
+        if (!VerticesVisitados[*i])
+            DFS(*i, VerticesVisitados);
 }
 
-// Transpose
-Graph Graph::transpose() {
-    Graph g(V);
-    for (int s = 0; s < V; s++) {
+Graph Graph::GrafoTransposto() {
+    Graph g(NumeroDeVertices);
+    for (int s = 0; s < NumeroDeVertices; s++) {
         list<int>::iterator i;
-        for (i = adj[s].begin(); i != adj[s].end(); ++i) {
-            g.adj[*i].push_back(s);
+        for (i = ListaDeAdjacencia[s].begin(); i != ListaDeAdjacencia[s].end(); ++i) {
+            g.ListaDeAdjacencia[*i].push_back(s);
         }
     }
     return g;
 }
 
-// Add edge into the graph
-void Graph::addEdge(int s, int d) {
-    adj[s].push_back(d);
-    AdjMatrix[s][d] = true;
+
+void Graph::AdicionarAresta(int node1, int node2) {
+    ListaDeAdjacencia[node1].push_back(node2);
+    MatrizDeAdjacencia[node1][node2] = true;
 }
 
-void Graph::fillOrder(int s, bool visitedV[], stack<int>& Stack) {
-    visitedV[s] = true;
+void Graph::PreencherStack(int s, bool VerticesVisitados[], stack<int>& Stack) {
+    VerticesVisitados[s] = true;
 
     list<int>::iterator i;
-    for (i = adj[s].begin(); i != adj[s].end(); ++i)
-        if (!visitedV[*i])
-            fillOrder(*i, visitedV, Stack);
+    for (i = ListaDeAdjacencia[s].begin(); i != ListaDeAdjacencia[s].end(); ++i)
+        if (!VerticesVisitados[*i])
+            PreencherStack(*i, VerticesVisitados, Stack);
 
     Stack.push(s);
 }
 
-// Print strongly connected component
-void Graph::GetSCC() {
+// Baseado no algoritmo de Kosaraju's visto em aula
+void Graph::DefinirNumeroDeSCCs() {
     stack<int> Stack;
 
-    bool* visitedV = new bool[V];
-    for (int i = 0; i < V; i++)
-        visitedV[i] = false;
+    bool* VerticesVisitados = new bool[NumeroDeVertices];
+    for (int i = 0; i < NumeroDeVertices; i++)
+        VerticesVisitados[i] = false;
 
-    for (int i = 0; i < V; i++)
-        if (visitedV[i] == false)
-            fillOrder(i, visitedV, Stack);
+    for (int i = 0; i < NumeroDeVertices; i++)
+        if (VerticesVisitados[i] == false)
+            PreencherStack(i, VerticesVisitados, Stack);
 
-    Graph gr = transpose();
+    Graph gr = GrafoTransposto();
 
-    for (int i = 0; i < V; i++)
-        visitedV[i] = false;
+    for (int i = 0; i < NumeroDeVertices; i++)
+        VerticesVisitados[i] = false;
 
-    //cout << "Strongly Connected Components:\n";
     while (Stack.empty() == false) 
     {
         int s = Stack.top();
         Stack.pop();
-        if (visitedV[s] == false) 
+        if (VerticesVisitados[s] == false) 
         {
-            AddSCC(s);
-            //cout << "SCCs size after adding: " << SCCs.size() << endl;
-            gr.DFS(s, visitedV);
-            //cout << endl;
+            AdicionarSCC(s);
+            gr.DFS(s, VerticesVisitados);
         }
     }
 }
@@ -203,30 +264,30 @@ int main()
     int NumeroDeRotas = 0;
     NumeroDeRotas = stoi(Linha);
 
+    // Criando grafo
     Graph Grafo(NumeroDeAeroportos);
 
-    //cout << "Lendo " << NumeroDeAeroportos << " aeroportos e " << NumeroDeRotas << " rotas." << endl << endl;
+    // Lendo rotas
     for (int i = 0; i < NumeroDeRotas; i++)
     {
-        // Lendo aeroportos
         int Aeroporto1;
         int Aeroporto2;
         cin >> Aeroporto1;
         Aeroporto1--;
         cin >> Aeroporto2;
         Aeroporto2--;
-        Grafo.addEdge(Aeroporto1, Aeroporto2);
+        Grafo.AdicionarAresta(Aeroporto1, Aeroporto2);
     }
 
-    Grafo.GetSCC();
-    Grafo.SetSCCEdges();
+    // Definindo o numero e varaveis de SCCs de acordo com os nodes atuais
+    Grafo.DefinirNumeroDeSCCs();
 
-    int NumeroDeArestas = Grafo.MaxDegree();
-    //cout << endl << endl;
-    cout << NumeroDeArestas << endl;
+    // Definindo o numero de arestas das SCCs de acordo com as arestas dos aeroportos
+    Grafo.DefinirArestasDaSCC();
 
-    // dont forget to dealocate size
-    // 
-    // https://stackoverflow.com/questions/14305236/minimal-addition-to-strongly-connected-graph
+    // Pegando o numero de arestas adicionadas para que o grafo se torne apenas um SCC
+    int NumeroDeArestasAdicionadas = Grafo.MaxDegree();
+    cout << NumeroDeArestasAdicionadas << endl;
+
     return 0;
 }
