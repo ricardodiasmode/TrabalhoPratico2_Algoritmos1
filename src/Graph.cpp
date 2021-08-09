@@ -155,7 +155,7 @@ void Graph::PreencherStack(int s, bool VerticesVisitados[], stack<int>& Stack) {
     Stack.push(s);
 }
 
-// Baseado no algoritmo de Kosaraju's visto em aula
+// Baseado no algoritmo de Kosaraju visto em aula
 void Graph::DefinirNumeroDeSCCs(vector<vector<int>>& SCCs) {
     stack<int> Stack;
 

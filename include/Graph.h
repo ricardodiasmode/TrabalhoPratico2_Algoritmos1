@@ -31,7 +31,7 @@ private:
 
     // Funcoes
 private:
-    /* Funcoes utilizadas no algoritmo de Kosaraju's ensinado em aula */
+    /* Funcoes utilizadas no algoritmo de Kosaraju ensinado em aula */
     void PreencherStack(int s, bool VerticesVisitados[], stack<int>& Stack);
     void DFS(int s, bool VerticesVisitados[], vector<vector<int>>& SCCs);
 
